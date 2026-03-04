@@ -1,0 +1,77 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-api
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: api_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-postgre.sql:/docker-entrypoint-initdb.d/init-postgre.sql
+    networks:
+      - api-monitoring-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:latest
+    container_name: mongo-api
+    ports:
+      - "27017:27017"
+    volumes:
+        - mongo_data:/data/db
+    networks:
+      - api-monitoring-network
+    restart: unless-stopped
+ 
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-api
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - api-monitoring-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmqctl status || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin-api
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - api-monitoring-network
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy 
+volumes:
+    postgres_data: 
+      driver: local
+    mongo_data:
+      driver: local
+    pgadmin_data:
+      driver: local
+networks:
+  api-monitoring-network:
+    driver: bridge
