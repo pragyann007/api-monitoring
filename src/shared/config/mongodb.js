@@ -16,6 +16,8 @@ export class mongoConnections {
         await mongoose.connect(configs.mongo.uri, {
             dbName: configs.mongo.db_name
         })
+
+        this.connection = mongoose.connection ; 
         logger.info("Mongo db connected ... ", configs.mongo.uri);
 
         this.connection.on("error", (err) => {
